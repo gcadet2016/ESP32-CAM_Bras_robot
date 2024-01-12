@@ -1,0 +1,114 @@
+<html>
+
+<head>
+    <title>ESP32-CAM Bras Robot</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin: 0px auto;
+            padding-top: 10px;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            margin: 10px;
+            width: 360px;
+            height: 20px;
+            background: #FFD65C;
+            outline: none;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 35px;
+            height: 35px;
+            background: #003249;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 35px;
+            height: 35px;
+            background: #003249;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+    <h2>ESP32-CAM Bras Robot</h2>
+    <div><img src="" id="img-frame"></div>
+    <br />
+    <div>0<input type="range" min="0" max="180" value="90" id="S0" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <br />
+    <div>1<input type="range" min="0" max="180" value="90" id="S1" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <br />
+    <div>2<input type="range" min="0" max="180" value="90" id="S2" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <br />
+    <div>3<input type="range" min="0" max="180" value="90" id="S3" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <br />
+    <div>4<input type="range" min="0" max="180" value="90" id="S4" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <br />
+    <div>5<input type="range" min="0" max="180" value="90" id="S5" oninput="sendServo(this.id,this.value)"
+            class="slider" /></div>
+    <hr />
+    <a>Enter command then press enter:</a><br />
+    <div>
+        <input type="text" id="txBar" onkeydown="if(event.keyCode == 13) sendText();" />
+    </div>
+    <br />
+    <a>Logs</a>
+    <div>
+        <textarea id="rxConsole"></textarea>
+    </div>
+    <a>Debug</a>
+    <div>
+        <textarea id="rxDebug"></textarea>
+    </div>
+    <script>
+        var Socket;
+        function init() {
+            Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+            //Socket = new WebSocket('ws://esp32:81/');  // for debugging purpose
+            Socket.onmessage = function (event) {
+                document.getElementById("rxConsole").value += event.data;
+            }
+            // Grab the elements to update dynamically according to the navigation.
+            const imgFrame = document.getElementById('img-frame');
+            var streamUrl = "http://" + window.location.hostname + ":82/_stream";
+            //var streamUrl = "http://esp32:82/_stream";    // for debugging purpose
+            window.onload = imgFrame.src = streamUrl;
+
+            // Disconnect the current streaming connection prior to the page transition.
+            window.addEventListener('pagehide', () => {
+                window.stop();
+            });
+
+            document.getElementById("rxDebug").value += "init executed";
+        }
+        function sendText() {
+            Socket.send(document.getElementById("txBar").value);
+            document.getElementById("txBar").value = "";
+        }
+        function sendServo(id, value) {
+            Socket.send(id + "=" + value);
+            document.getElementById("rxDebug").value += "sendServo executed";
+        }
+ 
+        Socket.onmessage = function (event) {
+            document.getElementById("rxConsole").value += event.data;
+        }
+        
+    </script>
+</body>
+
+</html>

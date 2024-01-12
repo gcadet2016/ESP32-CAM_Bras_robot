@@ -1,0 +1,13 @@
+{
+    "title": "Hello world",
+    "uri": "/hello_world",
+    "menu": true,
+    "element": [
+        {
+            "name": "text",
+            "type": "ACText",
+            "value": "Hello world!",
+            "style": "font-family:Arial;font-size:18px;font-weight:400;color:#191970"
+        }
+    ]
+}

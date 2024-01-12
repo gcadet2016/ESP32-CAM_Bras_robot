@@ -1,0 +1,76 @@
+{
+    "title": "MQTT Setting",
+    "uri": "/mqtt_setting",
+    "menu": true,
+    "element": [
+        {
+            "name": "header",
+            "type": "ACText",
+            "value": "<h2>MQTT broker settings</h2>",
+            "style": "text-align:center;color:#2f4f4f"
+        },
+        {
+            "name": "caption",
+            "type": "ACText",
+            "value": "<p>Text to be completed<p>",
+            "style": "font-family:serif;color:#4682b4"
+        },
+        {
+            "name": "mqttserver",
+            "type": "ACInput",
+            "value": "tbc",
+            "placeholder": "MQTT broket server",
+            "label": "Server"
+        },
+        {
+            "name": "password",
+            "type": "ACInput",
+            "value": "",
+            "label": "Password",
+            "apply": "password"
+        },
+        {
+            "name": "period",
+            "type": "ACRadio",
+            "label": "Update period",
+            "value": [
+                "30 sec.",
+                "60 sec.",
+                "180 sec."
+            ],
+            "arrange": "vertical",
+            "checked": 1
+        },
+        {
+            "name": "newline",
+            "type": "ACElement",
+            "value": "<hr>"
+        },
+        {
+            "name": "uniqueid",
+            "type": "ACCheckbox",
+            "value": "unique",
+            "label": "Use AppID unique",
+            "checked": false
+        },
+        {
+            "name": "number",
+            "type": "ACInput",
+            "label": "Numeric value",
+            "value": "",
+            "apply": "number"
+        },
+        {
+            "name": "mqttSave",
+            "type": "ACSubmit",
+            "value": "Save",
+            "uri": "/mqtt_save"
+        },
+        {
+            "name": "cancel",
+            "type": "ACSubmit",
+            "value": "Cancel",
+            "uri": "/"
+        }
+    ]
+}

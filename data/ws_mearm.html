@@ -1,0 +1,116 @@
+<html>
+
+<head>
+  <title>ESP32-CAM Robot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin: 0px auto;
+      padding-top: 10px;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      margin: 10px;
+      width: 360px;
+      height: 20px;
+      background: #FFD65C;
+      outline: none;
+      -webkit-transition: .2s;
+      transition: opacity .2s;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 35px;
+      height: 35px;
+      background: #003249;
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 35px;
+      height: 35px;
+      background: #003249;
+      cursor: pointer;
+    }
+
+    table {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    td {
+      padding: 8 px;
+    }
+
+    .button {
+      background-color: #2f4468;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 18px;
+      margin: 6px 3px;
+      cursor: pointer;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+
+    img {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <h1>ESP32-CAM Robot</h1>
+    <img src="" id="img-frame">
+    <p><span id="text1">Claw</span><input type="range" onchange="updateSliderPWM('14')" id="pwmSlider14" min="0"
+        max="180" value="90" step="1" class="slider"><span id="textSliderValue14">90</span></p>
+    <p><span id="text2">Right</span><input type="range" onchange="updateSliderPWM('0')" id="pwmSlider0" min="0"
+        max="180" value="90" step="1" class="slider"><span id="textSliderValue0">90</span></p>
+    <p><span id="text3">Left</span><input type="range" onchange="updateSliderPWM('15')" id="pwmSlider15" min="0"
+        max="180" value="90" step="1" class="slider"><span id="textSliderValue15">90</span></p>
+    <p><span id="text4">Rotate</span><input type="range" onchange="updateSliderPWM('4')" id="pwmSlider4" min="0"
+        max="180" value="90" step="1" class="slider"><span id="textSliderValue4">90</span></p>
+  </div>
+  <script>
+
+    function updateSliderPWM(element) {
+      var sliderValue = document.getElementById("pwmSlider" + element).value;
+      document.getElementById("textSliderValue" + element).innerHTML = sliderValue;
+      console.log(sliderValue);
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/slider?value=" + element + "_" + sliderValue, true);
+      xhr.send();
+    }
+
+    // Grab the elements to update dynamically according to the navigation.
+    const imgFrame = document.getElementById('img-frame');
+    var streamUrl = "http://" + window.location.hostname + ":82/_stream";
+
+    window.onload = imgFrame.src = streamUrl;
+
+    // Disconnect the current streaming connection prior to the page transition.
+    window.addEventListener('pagehide', () => {
+      window.stop();
+    });
+
+  </script>
+</body>
+
+</html>
