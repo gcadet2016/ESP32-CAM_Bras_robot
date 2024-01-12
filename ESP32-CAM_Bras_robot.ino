@@ -180,226 +180,6 @@ static const char LED_ONOFF[] PROGMEM = R"(
 }
 )";
 
-// Image sensor settings page
-const char  CAMERA_SETUP_PAGE[] = R"*(
-{
-  "title": "Camera",
-  "uri": "/_setting",
-  "menu": true,
-  "element": [
-    {
-      "name": "css",
-      "type": "ACStyle",
-      "value": ".noorder label{display:inline-block;min-width:150px;padding:5px;} .noorder select{width:160px} .magnify{width:20px}"
-    },
-    {
-      "name": "res",
-      "type": "ACSelect",
-      "label": "Resolution",
-      "option": [
-        "UXGA(1600x1200)",
-        "SXGA(1280x1024)",
-        "XGA(1024x768)",
-        "SVGA(800x600)",
-        "VGA(640x480)",
-        "CIF(400x296)",
-        "QVGA(320x240)",
-        "HQVGA(240x176)",
-        "QQVGA(160x120)"
-      ],
-      "selected": 4
-    },
-    {
-      "name": "qua",
-      "type": "ACRange",
-      "label": "Quality",
-      "value": 10,
-      "min": 10,
-      "max": 63,
-      "magnify": "infront"
-    },
-    {
-      "name": "con",
-      "type": "ACRange",
-      "label": "Contrast",
-      "value": 0,
-      "min": -2,
-      "max": 2,
-      "magnify": "infront"
-    },
-    {
-      "name": "bri",
-      "type": "ACRange",
-      "label": "Brightness",
-      "value": 0,
-      "min": -2,
-      "max": 2,
-      "magnify": "infront"
-    },
-    {
-      "name": "sat",
-      "type": "ACRange",
-      "label": "Saturation",
-      "value": 0,
-      "min": -2,
-      "max": 2,
-      "magnify": "infront"
-    },
-    {
-      "name": "se",
-      "type": "ACSelect",
-      "label": "Special Effect",
-      "option": [
-        "No Effect",
-        "Negative",
-        "Grayscale",
-        "Red Tint",
-        "Green Tint",
-        "Blue Tint",
-        "Sepia"
-      ],
-      "selected": 1
-    },
-    {
-      "name": "awb",
-      "type": "ACCheckbox",
-      "label": "AWB",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "wbg",
-      "type": "ACCheckbox",
-      "label": "AWB Gain",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "wbm",
-      "type": "ACSelect",
-      "label": "WB Mode",
-      "option": [
-        "Auto",
-        "Sunny",
-        "Cloudy",
-        "Office",
-        "Home"
-      ],
-      "selected": 1
-    },
-    {
-      "name": "aec",
-      "type": "ACCheckbox",
-      "label": "AEC SENSOR",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "dsp",
-      "type": "ACCheckbox",
-      "label": "AEC DSP",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "ael",
-      "type": "ACRange",
-      "label": "AE Level",
-      "value": 0,
-      "min": -2,
-      "max": 2,
-      "magnify": "infront"
-    },
-    {
-      "name": "exp",
-      "type": "ACRange",
-      "label": "Exposure",
-      "value": 204,
-      "min": 0,
-      "max": 1200,
-      "magnify": "infront",
-      "style": "margin-left:20px;width:110px"
-    },
-    {
-      "name": "agc",
-      "type": "ACCheckbox",
-      "label": "AGC",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "agv",
-      "type": "ACRange",
-      "label": "AGC Gain (Nx)",
-      "value": 5,
-      "min": 1,
-      "max": 31,
-      "magnify": "infront"
-    },
-    {
-      "name": "acl",
-      "type": "ACRange",
-      "label": "Gain Ceiling (2^)",
-      "value": 0,
-      "min": 1,
-      "max": 7,
-      "magnify": "infront"
-    },
-    {
-      "name": "bpc",
-      "type": "ACCheckbox",
-      "label": "DPC Black",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "wpc",
-      "type": "ACCheckbox",
-      "label": "DPC White",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "gma",
-      "type": "ACCheckbox",
-      "label": "GMA enable",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "lec",
-      "type": "ACCheckbox",
-      "label": "Lense Correction",
-      "labelposition": "infront",
-      "checked": true
-    },
-    {
-      "name": "hmi",
-      "type": "ACCheckbox",
-      "label": "H-Mirror",
-      "labelposition": "infront"
-    },
-    {
-      "name": "vfl",
-      "type": "ACCheckbox",
-      "label": "V-Flip",
-      "labelposition": "infront"
-    },
-    {
-      "name": "dcw",
-      "type": "ACCheckbox",
-      "label": "DCW (Downsize EN)",
-      "labelposition": "infront"
-    },
-    {
-      "name": "set",
-      "type": "ACSubmit",
-      "value": "SET",
-      "uri": "/set"
-    }
-  ]
-}
-)*";
 
 // Transition destination for CAMERA_SETUP_PAGE
 // It will invoke the handler as setSensor function for setting the image sensor.
@@ -518,6 +298,7 @@ AutoConnectAux auxInput;
 AutoConnectAux auxMqttSettings;
 AutoConnectAux auxHelloWorld;
 AutoConnectAux auxMqttSave;
+AutoConnectAux auxCameraSetup;
 
 
 // ===================== Event handler ===========================================================
@@ -1055,10 +836,7 @@ void setup() {
   if (err != ESP_OK)
     Serial.printf("Camera init failed 0x%04x\n", err);
 
-  // Loading the image sensor configurarion UI provided by AutoConnectAux.
-  portal.load(FPSTR(CAMERA_SETUP_PAGE));
-  if (portal.load(FPSTR(CAMERA_SETUP_EXEC)))
-    portal.on(_setUrl, setSensor);
+
 
   // AutoConnect configuration
   config.title = appTitle; 
@@ -1084,10 +862,22 @@ void setup() {
 
   SPIFFS.begin();
   {
+    File json_file;
     //portal.load(FPSTR(HOME_PAGE));  replaced by OnRoot
+
+    // Loading the image sensor configurarion UI provided by AutoConnectAux.
+    json_file = SPIFFS.open("/camera_setup.json", "r");
+    if(!auxCameraSetup.load(json_file)) {
+      Serial.println("ERROR: camera_setup page load failed");
+    }
+    //portal.load(json_file);  // Autre solution
+
+    if (portal.load(FPSTR(CAMERA_SETUP_EXEC)))
+    portal.on(_setUrl, setSensor);
+
     portal.load(FPSTR(LED_ONOFF));
 
-    File json_file = SPIFFS.open("/hello_world.json", "r");
+    json_file = SPIFFS.open("/hello_world.json", "r");
     if(!auxHelloWorld.load(json_file)){
       Serial.println("ERROR: hello_world page load failed");
     };
@@ -1110,7 +900,7 @@ void setup() {
   }
   SPIFFS.end();
 
-  portal.join({auxInput, auxHelloWorld, auxMqttSettings, auxMqttSave});
+  portal.join({auxInput, auxCameraSetup, auxHelloWorld, auxMqttSettings, auxMqttSave});
 
   // give your custom web page the ability to handle events using Fetch API
   // https://hieromon.github.io/AutoConnect/acinteract.html#allow-autoconnectelements-to-have-event-processing
