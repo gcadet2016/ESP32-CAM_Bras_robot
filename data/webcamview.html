@@ -348,7 +348,7 @@
       var res;
       var streaming = isStreaming();
       stream(false);
-      fetch(url)
+      fetch(url)      // ici on invoke /_prompt avec paramètres et ça execute du code Arduino
         .then(response => {
           res = "status:" + response.status + " ";
           if (!response.ok) {

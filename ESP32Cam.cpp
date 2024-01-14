@@ -21,6 +21,28 @@
 #include <img_converters.h>
 #include "ESP32Cam.h"
 #include "ESP32Cam_pins.h"
+#include "FS.h"                // SD Card ESP32
+#include "SD_MMC.h"            // SD Card ESP32
+
+// Pin definition for CAMERA_MODEL_AI_THINKER
+// required for new SD card code 
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26
+#define SIOC_GPIO_NUM     27
+
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
 
 // The interrupt handler for the timer shot uses a static Mutex and a pointer
 // to an ESP32Cam instance.
@@ -467,8 +489,12 @@ esp_err_t ESP32Cam::oneShot(fs::SDFS& sd, const char* filename) {
   // Allow one-shot writes even if SD.begin() is not running in the user sketch.
   // To do so, it detects the card mount state only once and tries to start the
   // SD file system.
-  if (!_autoMount(MOUNT_SD, reinterpret_cast<fs::FS*>(&sd)))
+  /*
+  if (!_autoMount(MOUNT_SD, reinterpret_cast<fs::FS*>(&sd))) {
+    log_d("[ESP32Cam::oneShot sd] _autoMount failure");
     return ESP_ERR_INVALID_STATE;
+  }
+  */
   return _oneShot(filename);
 }
 
@@ -487,8 +513,12 @@ esp_err_t ESP32Cam::oneShot(fs::SDMMCFS& mmc, const char* filename) {
   // Allow one-shot writes even if SDMMC.begin() is not running in the user
   // sketch. To do so, it detects the card mount state only once and tries to
   // start the SDMMC file system.
-  if (!_autoMount(MOUNT_SDMMC, reinterpret_cast<fs::FS*>(&mmc)))
+  /*
+  if (!_autoMount(MOUNT_SDMMC, reinterpret_cast<fs::FS*>(&mmc))) {
+    log_d("[ESP32Cam::timerShot sdmmc] _autoMount failure");
     return ESP_ERR_INVALID_STATE;
+  }
+  */
   return _oneShot(filename);
 }
 
@@ -520,6 +550,11 @@ esp_err_t ESP32Cam::_oneShot(const char* filename) {
     rc = _export(filename, nullptr);
     deq();
   }
+  
+  // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
+  //pinMode(4, OUTPUT);
+  //digitalWrite(4, LOW);
+
   return rc;
 }
 
@@ -542,8 +577,12 @@ esp_err_t ESP32Cam::timerShot(const unsigned long period, fs::SDFS& sd, const ch
   // Allow one-shot writes even if SD.begin() is not running in the user sketch.
   // To do so, it detects the card mount state only once and tries to start the
   // SD file system.
-  if (!_autoMount(MOUNT_SD, reinterpret_cast<fs::FS*>(&sd)))
+  /*
+  if (!_autoMount(MOUNT_SD, reinterpret_cast<fs::FS*>(&sd))) {
+    log_d("[ESP32Cam::timerShot sd] _autoMount failure");
     return ESP_ERR_INVALID_STATE;
+  }
+  */
   _timerShot(period, filenamePrefix);
   return ESP_OK;
 }
@@ -567,8 +606,12 @@ esp_err_t ESP32Cam::timerShot(const unsigned long period, fs::SDMMCFS& mmc, cons
   // Allow one-shot writes even if SDMMC.begin() is not running in the user
   // sketch. To do so, it detects the card mount state only once and tries to
   // start the SDMMC file system.
-  if (!_autoMount(MOUNT_SDMMC, reinterpret_cast<fs::FS*>(&mmc)))
+  /*
+  if (!_autoMount(MOUNT_SDMMC, reinterpret_cast<fs::FS*>(&mmc))) {
+    log_d("[ESP32Cam::timerShot sdmmc] _autoMount failure");
     return ESP_ERR_INVALID_STATE;
+  }
+  */
   _timerShot(period, filenamePrefix);
   return ESP_OK;
 }
@@ -671,6 +714,9 @@ void ESP32Cam::disableTimerShot(void) {
       break;
     }
   }
+  // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
+  //pinMode(4, OUTPUT);
+  //digitalWrite(4, LOW);
 }
 
 /**
@@ -749,51 +795,67 @@ size_t ESP32Cam::_appendTimestamp(char* str) {
  * @return true    Filesystem mounted
  * @return false   Filesystem could not mounted
  */
+ /*
 bool ESP32Cam::_autoMount(const SDType_t sdType, fs::FS* sdFile) {
   bool  rc = false;
-
+  log_d("[ESP32Cam::_autoMount] starting");
   switch (sdType) {
-  case MOUNT_SD: {
-    fs::SDFS* sd = reinterpret_cast<fs::SDFS*>(sdFile);
-    if (sd->cardType() == CARD_NONE)
-      rc = sd->begin();
-    else {
-      if (!sd->open(_mountProbe, FILE_WRITE)) {
-        log_d("SD mount removed, remounting\n");
-        sd->end();
+    case MOUNT_SD: {
+      fs::SDFS* sd = reinterpret_cast<fs::SDFS*>(sdFile);
+      if (sd->cardType() == CARD_NONE){
+        log_d("[ESP32Cam::_autoMount] sd->begin()");
         rc = sd->begin();
       }
-      else
-        rc = sd->remove(_mountProbe);
+      else {
+        if (!sd->open(_mountProbe, FILE_WRITE)) {
+          log_d("[ESP32Cam::_autoMount] SD mount removed, remounting\n");
+          sd->end();
+          rc = sd->begin();
+        }
+        else
+          log_d("[ESP32Cam::_autoMount] sd->remove()");
+          rc = sd->remove(_mountProbe);
+      }
+      if (rc) {
+        log_d("[ESP32Cam::_autoMount] rc not null");
+        _sdFile = sd;
+      }
+      break;
     }
-    if (rc)
-      _sdFile = sd;
-    break;
-  }
-  case MOUNT_SDMMC: {
-    fs::SDMMCFS*  sdmmc = reinterpret_cast<fs::SDMMCFS*>(sdFile);
-    if (sdmmc->cardType() == CARD_NONE)
-      rc = sdmmc->begin();
-    else {
-      if (!sdmmc->open(_mountProbe, FILE_WRITE)) {
-        log_d("SDMMC mount removed, remounting\n");
-        sdmmc->end();
+    case MOUNT_SDMMC: {
+      fs::SDMMCFS*  sdmmc = reinterpret_cast<fs::SDMMCFS*>(sdFile);
+      if (sdmmc->cardType() == CARD_NONE) {
+        log_d("[ESP32Cam::_autoMount] sdmmc->begin()");
         rc = sdmmc->begin();
       }
-      else
-        rc = sdmmc->remove(_mountProbe);
+      else {
+        if (!sdmmc->open(_mountProbe, FILE_WRITE)) {
+          log_d("[ESP32Cam::_autoMount] SDMMC mount removed, remounting\n");
+          sdmmc->end();
+          rc = sdmmc->begin();
+        }
+        else {
+          log_d("[ESP32Cam::_autoMount] sdmmc->remove()");
+          rc = sdmmc->remove(_mountProbe);
+        }
+      }
+      if (rc) {
+        log_d("[ESP32Cam::_autoMount] rc not null");
+        _sdFile = sdmmc;
+      }
+      break;
     }
-    if (rc)
-      _sdFile = sdmmc;
-    break;
-  }
-  case MOUNT_NONE:
-    break;
+    case MOUNT_NONE: {
+      log_d("[ESP32Cam::_autoMount] MOUNT_NONE");
+      break;
+    }
   }
   _mounted = rc ? sdType : MOUNT_NONE;
-    
+  
+  if(_mounted == MOUNT_NONE) log_d("[ESP32Cam::_autoMount] _mounted == MOUNT_NONE");
   return rc;
 }
+*/
 
 /**
  * Output the captured image to the _sd file system indicated by the current
@@ -808,6 +870,60 @@ bool ESP32Cam::_autoMount(const SDType_t sdType, fs::FS* sdFile) {
  * @return ESP_OK      Successfully output
  * @return ESP_FAIL    Error has occurred
  */
+esp_err_t ESP32Cam::_export(const char* filename, camera_fb_t* frameBuffer) {
+  esp_err_t rc;
+  rc = ESP_FAIL;
+
+  log_i("[ESP32Cam::_export] Starting");
+  if(!SD_MMC.begin()){
+    log_e("[ESP32Cam::_export] SD Card Mount Failed");
+    return rc;
+  }
+  
+  uint8_t cardType = SD_MMC.cardType();
+  if(cardType == CARD_NONE){
+    log_e("[ESP32Cam::_export] No SD Card attached");
+    return rc;
+  }
+  
+  // Obtain the captured frame buffer.
+  // When called recursively, the frameBuffer will have already captured the image.
+  if (!frameBuffer)
+    frameBuffer = esp_camera_fb_get();
+
+  if (frameBuffer) {
+    // Give a proper extension to half-baked filename.
+    char path[strlen(filename) + sizeof(ESP32CAM_EXPORT_FILEEXTENSION)];
+    strcpy(path, filename);
+    const char* ext = strchr(path, '.');
+    bool  bc = ext != nullptr;
+    if (bc)
+      bc = strcmp(ext, ESP32CAM_EXPORT_FILEEXTENSION) == 0;
+    if (!bc)
+      strcat(path, ESP32CAM_EXPORT_FILEEXTENSION);
+
+    // Export
+    fs::FS &fs = SD_MMC; 
+    log_i("Picture file name: %s\n", path);
+  
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+      log_e("Failed to open file in writing mode");
+    } else {
+      file.write(frameBuffer->buf, frameBuffer->len); // payload (image), payload length
+      log_i("File saved");
+    }
+    file.close();
+    esp_camera_fb_return(frameBuffer);
+    rc = ESP_OK;
+  }  else {
+    log_e("failed to esp_camera_fb_get\n");
+    rc = ESP_FAIL;
+  }
+
+  return rc;
+}
+/*
 esp_err_t ESP32Cam::_export(const char* filename, camera_fb_t* frameBuffer) {
   esp_err_t rc;
 
@@ -855,6 +971,7 @@ esp_err_t ESP32Cam::_export(const char* filename, camera_fb_t* frameBuffer) {
 
   return rc;
 }
+*/
 
 /**
  * Release a timer resource
