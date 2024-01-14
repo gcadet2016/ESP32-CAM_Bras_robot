@@ -26,23 +26,26 @@
 | | Disconnect | &#x2705; | |
 | | Open SSIDs | &#x2705; | |
 | | Configure new AP | &#x2705; | |
+| http://esp32.local/ | | <span style="color:red">**KO**</span> | missing input value |
 | http://esp32.local/led | | &#x2705; | |
 | http://esp32.local/list | manque arguments | &#x2705; | |
+| http://esp32.local/edit | | &#x2705; | |
 | http://esp32/list?dir=/	| | &#x2705; | |
 | http://esp32.local/ws_basic | | &#x2705; | |
 | http://esp32.local/ws_servo1 | | &#x2705; | |
 | http://esp32.local/ws_servo2 | | &#x2705; | |
+| http://esp32.local:82/_capture | | <span style="color:red">**KO**</span> | |
 | http://esp32.local/cam | | &#x2705; | redirection |
 | | streaming |  &#x2705; | |
 | | still | &#x2705; | |
-| | One-Shot | <span style="color:red">**KO**</span> | status:400 SD not mounted |
-| | Timer-Shot | not tested | |
+| | One-Shot |  &#x2705; | |
+| | Timer-Shot |  &#x2705; | |
 | | setting	| &#x2705; | http://esp32.local/_setting|
 	
 ## Todo
 
 - url en esp32/input et esp32.local/input
-- manque première lettre de chaque nom de fichier http://esp32/list?dir=/
+- Bug: Get time fro time server ko
 
 
 ## WebCamServer

@@ -62,10 +62,10 @@
 
 
 // Version
-const char *applicationName = "Servo & socket test";
-const char *filename = "ESP2_CAM_WebSocket_Servo_Tests_4.ino";
-const char *appVersion = "1.65";
-const char *appTitle = "Servo v1.65";
+const char *applicationName = "Servo & esp32-cam test";
+const char *filename = "ESP2-CAM_Bras_robot.ino";
+const char *appVersion = "2.10";
+const char *appTitle = "Servo v2.10";
 
 #if defined(ARDUINO_ARCH_ESP8266)
   #include <ESP8266WiFi.h>
@@ -257,15 +257,15 @@ String getContentType(String filename) {
 }
 
 bool handleFileRead(String path) {
+  if (path.endsWith("/")) {
+    path += "index.html";
+  }
+  String contentType = getContentType(path);
+  String pathWithGz = path + ".gz";
   debug_printf("handleFileRead:");
   //debug_printf("handleFileRead: %s\n", path);
   debug_printf(path);
   debug_printf("\n");
-  if (path.endsWith("/")) {
-    path += "index.htm";
-  }
-  String contentType = getContentType(path);
-  String pathWithGz = path + ".gz";
   if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
     if (SPIFFS.exists(pathWithGz)) {
       path += ".gz";
@@ -277,7 +277,8 @@ bool handleFileRead(String path) {
     debug_printf("File closed\n");
     return true;
   } else {
-    Serial.printf("File not found:\n");
+    Serial.print("File not found:");
+    Serial.println(path);
   }
   return false;
 }
@@ -299,9 +300,13 @@ AutoConnectAux auxMqttSettings;
 AutoConnectAux auxHelloWorld;
 AutoConnectAux auxMqttSave;
 AutoConnectAux auxCameraSetup;
+AutoConnectAux FSBedit("/edit", "Edit");      // add "Edit" to AutoConnect Menu
+//AutoConnectAux FSBlist("/list?dir=\"/\"", "List");
+AutoConnectAux FSBlist("/list?dir=/", "List"); // add "List" to AutoConnect Menu
+//holds the current upload
+File fsUploadFile;
 
-
-// ===================== Event handler ===========================================================
+// ===================== File system Event handler ===========================================================
 void handleFileList() {
   if (!server.hasArg("dir")) {
     server.send(500, "text/plain", "BAD ARGS");
@@ -357,6 +362,71 @@ void handleFileList() {
   server.send(200, "text/json", output);
 }
 
+void handleFileUpload() {
+  if (server.uri() != "/edit") {
+    return;
+  }
+  HTTPUpload& upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    String filename = upload.filename;
+    if (!filename.startsWith("/")) {
+      filename = "/" + filename;
+    }
+    Serial.print("handleFileUpload Name: "); Serial.println(filename);
+    fsUploadFile = SPIFFS.open(filename, "w");
+    filename = String();
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    //Serial.print("handleFileUpload Data: "); Serial.println(upload.currentSize);
+    if (fsUploadFile) {
+      fsUploadFile.write(upload.buf, upload.currentSize);
+    }
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (fsUploadFile) {
+      fsUploadFile.close();
+    }
+    Serial.print("handleFileUpload Size: "); Serial.println(upload.totalSize);
+  }
+}
+
+void handleFileDelete() {
+  if (server.args() == 0) {
+    return server.send(500, "text/plain", "BAD ARGS");
+  }
+  String path = server.arg(0);
+  Serial.println("handleFileDelete: " + path);
+  if (path == "/") {
+    return server.send(500, "text/plain", "BAD PATH");
+  }
+  if (!SPIFFS.exists(path)) {
+    return server.send(404, "text/plain", "FileNotFound");
+  }
+  SPIFFS.remove(path);
+  server.send(200, "text/plain", "");
+  path = String();
+}
+
+void handleFileCreate() {
+  if (server.args() == 0) {
+    return server.send(500, "text/plain", "BAD ARGS");
+  }
+  String path = server.arg(0);
+  Serial.println("handleFileCreate: " + path);
+  if (path == "/") {
+    return server.send(500, "text/plain", "BAD PATH");
+  }
+  if (SPIFFS.exists(path)) {
+    return server.send(500, "text/plain", "FILE EXISTS");
+  }
+  File file = SPIFFS.open(path, "w");
+  if (file) {
+    file.close();
+  } else {
+    return server.send(500, "text/plain", "CREATE FAILED");
+  }
+  server.send(200, "text/plain", "");
+  path = String();
+}
+
 // Event handler that attaches to an AutoConnectButton named `led`.
 // This event handler receives a reference to AutoConnectButton as `led`
 // and a reference to the AutoConnectAux of the page rendered in the client
@@ -394,32 +464,6 @@ void ledOnOff(AutoConnectButton& me, AutoConnectAux& ledOnOff) {
   }
 }
 
-// An on-page handler for '/' access
-// Use this page for documentation
-void onRoot() {
-  String  content =
-  "<html>"
-  "<head><meta name='viewport' content='width=device-width, initial-scale=1'></head>"
-  "<body>"
-  "<div>INPUT: {{value}}</div>"
-  "<p><a href=""http://{{localhost}}/_ac>AutoConnect Page</a></p>"
-  "<p><a href=""http://{{localhost}}/input>Input test Page</a></p>"
-  "<p><a href=""http://{{localhost}}/list?dir=/>File list</a></p>"
-  "<p><a href=""http://{{localhost}}/ws_basic>Test servos</a></p>"
-  "<p><a href=""http://{{localhost}}/ws_servo1>Test servos avec camera</a></p>"
-  "<p><a href=""http://{{localhost}}/ws_servo2>Test servo 2</a></p>"
-  "<p><a href=""http://{{localhost}}/cam>Camera</a></p>"
-  "</body>"
-  "</html>";
-
-  auxInput.fetchElement();    // Preliminary acquisition
-
-  // For this steps to work, need to call fetchElement function beforehand.
-  String value = auxInput["input"].value;
-  content.replace("{{localhost}}", host);
-  content.replace("{{value}}", value);
-  server.send(200, "text/html", content);
-}
 
 // ===================== Cam procedures =============================================================
 // Endpoint that leads request to the root page to webcamview.html
@@ -830,7 +874,8 @@ void setup() {
 
   reset_LU9685();
 
-
+  Serial.setDebugOutput(true);
+  
   // Initialize the image sensor during the start phase of the sketch.
   esp_err_t err = webcam.sensorInit(model);
   if (err != ESP_OK)
@@ -854,16 +899,19 @@ void setup() {
   // Load AutoConnect custom web page from SPIFFS
   // AutoConnect custom web pages with json
   // https://hieromon.github.io/AutoConnect/acjson.html
-  debug_printf("Loading custom AC pages...");
+  debug_printf("Loading custom AC pages...\n");
 
-  //AutoConnectAux page;
+  //AutoConnectAux input page;
   auxInput.load(InputPage);
   //portal.join(auxInput);
 
   SPIFFS.begin();
   {
     File json_file;
-    //portal.load(FPSTR(HOME_PAGE));  replaced by OnRoot
+
+    //json_file = SPIFFS.open("index.html", "r");
+    //portal.load(json_file);
+    //portal.on("")
 
     // Loading the image sensor configurarion UI provided by AutoConnectAux.
     json_file = SPIFFS.open("/camera_setup.json", "r");
@@ -900,7 +948,7 @@ void setup() {
   }
   SPIFFS.end();
 
-  portal.join({auxInput, auxCameraSetup, auxHelloWorld, auxMqttSettings, auxMqttSave});
+  portal.join({auxInput, auxCameraSetup, auxHelloWorld, auxMqttSettings, auxMqttSave, FSBedit, FSBlist});
 
   // give your custom web page the ability to handle events using Fetch API
   // https://hieromon.github.io/AutoConnect/acinteract.html#allow-autoconnectelements-to-have-event-processing
@@ -918,10 +966,27 @@ void setup() {
   auxMqttSave.on(postMqttSettings); // HTTP Post event handler configuration
 
   //Web page out of AutoConnect : root page
-  server.on("/", onRoot);  // Register the on-page handler
+  //server.on("/", onRoot);  // Register the on-page handler (onRoot was inline HTML string)
 
   //Web page out of AutoConnect : list directory
+  //list directory
   server.on("/list", HTTP_GET, handleFileList);
+  //load editor
+  server.on("/edit", HTTP_GET, []() {
+    if (!handleFileRead("/edit.htm")) {
+      server.send(404, "text/plain", "FileNotFound");
+    }
+  });
+  //create file
+  server.on("/edit", HTTP_PUT, handleFileCreate);
+  //delete file
+  server.on("/edit", HTTP_DELETE, handleFileDelete);
+  //first callback is called after the request has ended with all parsed arguments
+  //second callback handles file uploads at that location
+  server.on("/edit", HTTP_POST, []() {
+    server.send(200, "text/plain", "");
+  }, handleFileUpload);
+
 
   server.on("/ws_basic", HTTP_GET, []() {
     if (!handleFileRead("/ws_basic.html")) {
@@ -951,6 +1016,17 @@ void setup() {
   //AutoConnectAux FSBlist("/list?dir=\"/\"", "List");
   //portal.join({ FSBedit, FSBlist });
 
+
+  //called when the url is not defined here
+  //use it to load static content from SPIFFS (used for index.html)
+  //Replacement as follows to make AutoConnect recognition.
+  //server.onNotFound([](){
+  portal.onNotFound([](){
+    debug_printf("uri not found : %s\n", server.uri());
+    if(!handleFileRead(server.uri()))
+      server.send(404, "text/plain", "FileNotFound");
+  });
+  debug_printf("404 handler started");
 
 
   Serial.println("portal about to begin: join the Wifi esp32ap AP with your phone");
@@ -987,10 +1063,11 @@ void setup() {
 
     #if defined(DEBUG)
       #define MAX_SIZE 64
-      time_t timestamp = time( NULL );
       char buffer[MAX_SIZE];
-      struct tm *pTime = localtime(&timestamp );
-      strftime(buffer, MAX_SIZE, "%d/%m/%Y %H:%M:%S", pTime);
+
+      struct tm timeInfo;
+      getLocalTime(&timeInfo);
+      strftime(buffer, MAX_SIZE, "%d/%m/%Y %H:%M:%S", &timeInfo);
       Serial.println(buffer);
     #endif
 
